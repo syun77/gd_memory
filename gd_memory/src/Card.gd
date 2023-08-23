@@ -50,6 +50,8 @@ var _timer = 0.0
 var _selected = false
 ## 点滅タイマー.
 var _blink_timer = 0.0
+## ディレイタイマー.
+var _delay_timer = 0.0
 
 # --------------------------------------------
 # public functions.
@@ -60,17 +62,21 @@ func setup(pos:Vector2, idx:int, id:eId) -> void:
 	_pos_idx = idx
 	_id = id
 	
+	_front.texture = load("res://assets/images/card_%02d.png"%id)
+	
 ## 裏返す.
-func flip_to_back() -> void:
+func flip_to_back(delay:float=0) -> void:
 	if _state != eState.BACK:
 		_timer = 0
 		_state = eState.FRONT_TO_BACK
+		_delay_timer = delay
 
 ## 表にする.
-func flip_to_front() -> void:
+func flip_to_front(delay:float=0) -> void:
 	if _state != eState.FRONT:
 		_timer = 0
 		_state = eState.BACK_TO_FRONT
+		_delay_timer = delay
 
 # --------------------------------------------
 # private functions.
@@ -83,6 +89,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_blink_timer += delta
 	
+	if _delay_timer > 0.0:
+		_delay_timer -= delta
+		return
+	
 	_timer += delta
 	var rot_rate = 1.0
 	var is_back = true
@@ -94,10 +104,10 @@ func _process(delta: float) -> void:
 		eState.BACK_TO_FRONT:
 			if _timer < 0.5:
 				is_back = true
-				rot_rate /= 0.5
+				rot_rate = _timer / 0.5
 			elif _timer < 1.0:
 				is_back = false
-				rot_rate = (rot_rate - 0.5) / 0.5
+				rot_rate = (_timer - 0.5) / 0.5
 			else:
 				is_back = false
 				rot_rate = 1.0
@@ -108,14 +118,22 @@ func _process(delta: float) -> void:
 		eState.FRONT_TO_BACK:
 			if _timer < 0.5:
 				is_back = false
-				rot_rate /= 0.5
+				rot_rate = _timer / 0.5
 			elif _timer < 1.0:
 				is_back = true
-				rot_rate = (rot_rate - 0.5) / 0.5
+				rot_rate = (_timer - 0.5) / 0.5
 			else:
 				is_back = true
 				rot_rate = 1.0
 				_state = eState.BACK
+	_back.visible = false
+	_front.visible = false
+	var spr:Sprite2D = _front
+	if is_back:
+		spr = _back
+	spr.visible = true
+	spr.scale.x = 1.0 * sin(PI/2 * rot_rate)
+		
 	
 func _update_back() -> void:
 	_white.visible = false

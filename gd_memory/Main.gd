@@ -41,9 +41,17 @@ func _ready() -> void:
 		var pos = _grid_to_screen(i, j)
 		var idx = _grid_to_idx(i, j)
 		var card = CARD_OBJ.instantiate()
-		card.setup(pos, idx, v)
 		_card_layer.add_child(card)
+		card.setup(pos, idx, v)
+		card.flip_to_front(idx * 0.1)
 	)
+	
+func _process(delta: float) -> void:
+	_update_debug()
+
+func _update_debug() -> void:
+	if Input.is_action_just_pressed("reset"):
+		get_tree().change_scene_to_file("res://Main.tscn")
 
 func _grid_to_screen(i:int, j:int) -> Vector2i:
 	var v = Vector2i()
