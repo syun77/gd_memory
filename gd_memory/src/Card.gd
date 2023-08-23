@@ -7,6 +7,9 @@ class_name Card
 # --------------------------------------------
 # const.
 # --------------------------------------------
+## ひっくり返る時間.
+const TIME_ROTATE = 0.5
+
 ## カードID.
 enum eId {
 	NONE = 0,
@@ -77,6 +80,7 @@ func flip_to_front(delay:float=0) -> void:
 		_timer = 0
 		_state = eState.BACK_TO_FRONT
 		_delay_timer = delay
+		_white.visible = false # 点滅を非表示.
 
 # --------------------------------------------
 # private functions.
@@ -93,36 +97,49 @@ func _process(delta: float) -> void:
 		_delay_timer -= delta
 		return
 	
+	var time_half = TIME_ROTATE / 2.0
+	var time_total = TIME_ROTATE
+	
 	_timer += delta
 	var rot_rate = 1.0
 	var is_back = true
 	match _state:
 		eState.BACK:
+			# 裏向き.
 			is_back = true
 			rot_rate = 1.0
-			_update_back()
+			_update_back(delta)
 		eState.BACK_TO_FRONT:
-			if _timer < 0.5:
+			# 裏 -> 表.
+			if _timer < time_half:
+				# 前半.
 				is_back = true
-				rot_rate = _timer / 0.5
-			elif _timer < 1.0:
+				rot_rate = 1 - (_timer / time_half)
+			elif _timer < time_total:
+				# 後半.
 				is_back = false
-				rot_rate = (_timer - 0.5) / 0.5
+				rot_rate = (_timer - time_half) / time_half
 			else:
+				# 終了.
 				is_back = false
 				rot_rate = 1.0
 				_state = eState.FRONT
 		eState.FRONT:
+			# 表向き.
 			is_back = false
 			rot_rate = 1.0
 		eState.FRONT_TO_BACK:
-			if _timer < 0.5:
+			# 表 -> 裏.
+			if _timer < time_half:
+				# 前半.
 				is_back = false
-				rot_rate = _timer / 0.5
-			elif _timer < 1.0:
+				rot_rate = 1 - (_timer / time_half)
+			elif _timer < time_total:
+				# 後半.
 				is_back = true
-				rot_rate = (_timer - 0.5) / 0.5
+				rot_rate = (_timer - time_half) / time_half
 			else:
+				# 終了.
 				is_back = true
 				rot_rate = 1.0
 				_state = eState.BACK
@@ -135,11 +152,16 @@ func _process(delta: float) -> void:
 	spr.scale.x = 1.0 * sin(PI/2 * rot_rate)
 		
 	
-func _update_back() -> void:
-	_white.visible = false
+func _update_back(delta:float) -> void:
 	if _selected:
 		_white.visible = true
-		_white.modulate.a = abs(sin(_blink_timer * 2))
+		_white.modulate.a = 0.2 + 0.8 * abs(sin(_blink_timer * 2))
+	else:
+		if _white.modulate.a > 0:
+			_white.modulate.a -= delta * 2
+			if _white.modulate.a <= 0:
+				_white.modulate.a = 0
+				_white.visible = false
 
 # --------------------------------------------
 # signals.
@@ -147,7 +169,7 @@ func _update_back() -> void:
 ## マウスカーソルが入ってきた.
 func _on_mouse_entered() -> void:
 	_selected = true
-	_blink_timer = 0.0
+	_blink_timer = PI/2/2
 
 ## マウスカーソルが出ていった.
 func _on_mouse_exited() -> void:
@@ -156,10 +178,21 @@ func _on_mouse_exited() -> void:
 # --------------------------------------------
 # properties.
 # --------------------------------------------
+## カードID.
 var id:eId:
 	get:
 		return _id
+## インデックス番号.
 var idx:int:
 	get:
 		return _pos_idx
-
+## 選択しているかどうか.
+var selected:bool:
+	get:
+		if _state == eState.BACK:
+			return _selected
+		return false
+## 裏向きかどうか.
+var is_back:bool:
+	get:
+		return _state == eState.BACK
