@@ -40,6 +40,8 @@ enum eState {
 # --------------------------------------------
 ## ID.
 var _id = eId.NONE
+## 位置.
+var _pos_idx = 0
 ## 状態.
 var _state = eState.BACK
 ## タイマー.
@@ -49,6 +51,15 @@ var _selected = false
 ## 点滅タイマー.
 var _blink_timer = 0.0
 
+# --------------------------------------------
+# public functions.
+# --------------------------------------------
+## セットアップ.
+func setup(pos:Vector2, idx:int, id:eId) -> void:
+	position = pos
+	_pos_idx = idx
+	_id = id
+	
 ## 裏返す.
 func flip_to_back() -> void:
 	if _state != eState.BACK:
@@ -123,3 +134,14 @@ func _on_mouse_entered() -> void:
 ## マウスカーソルが出ていった.
 func _on_mouse_exited() -> void:
 	_selected = false
+
+# --------------------------------------------
+# properties.
+# --------------------------------------------
+var id:eId:
+	get:
+		return _id
+var idx:int:
+	get:
+		return _pos_idx
+

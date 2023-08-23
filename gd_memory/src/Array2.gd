@@ -67,6 +67,12 @@ func check_all_empty() -> bool:
 			return false
 	return true
 
+func foreach(f:Callable) -> void:
+	for j in range(height):
+		for i in range(width):
+			var v = get_v(i, j)
+			f.call(i, j, v)
+
 ## デバッグ出力.
 func dump() -> void:
 	print("-----------------------------")
