@@ -79,12 +79,40 @@ func _process(delta: float) -> void:
 				c.flip_to_front()
 				_front_cards.append(c)
 				break
+	
+	_check_erase()
+	
 	if Input.is_action_just_pressed("ui_accept"):
 		for card in _front_cards:
 			var c = card as Card
 			c.flip_to_back()
 	
 	_update_debug()
+
+## 消去チェック.
+func _check_erase() -> void:
+	var list = []
+	for i in range(Card.eId.size()):
+		list.append(0)
+	for card in _card_layer.get_children():
+		var c = card as Card
+		if c.is_front == false:
+			continue # 対象カードは表のものだけ.
+		# カウントだけする.
+		list[c.id] += 1
+	
+	for idx in range(list.size()):
+		if list[idx] < 2:
+			continue
+		
+		for card in _card_layer.get_children():
+			var c = card as Card
+			if c.is_front == false:
+				continue # 対象カードは表のものだけ.
+			if c.id == idx:
+				c.vanish()
+			
+
 
 func _update_debug() -> void:
 	if Input.is_action_just_pressed("reset"):

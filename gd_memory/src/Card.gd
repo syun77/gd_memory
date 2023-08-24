@@ -8,7 +8,8 @@ class_name Card
 # const.
 # --------------------------------------------
 ## ひっくり返る時間.
-const TIME_ROTATE = 0.5
+const TIME_ROTATE = 0.3
+const TIME_VANISH = 0.5 # 消滅時間.
 
 ## カードID.
 enum eId {
@@ -29,6 +30,7 @@ enum eState {
 	BACK_TO_FRONT, # 裏から表.
 	FRONT, # 表向き.
 	FRONT_TO_BACK, # 表から裏.
+	VANISH, # 消滅.
 }
 
 # --------------------------------------------
@@ -37,6 +39,7 @@ enum eState {
 @onready var _back = $Back
 @onready var _front = $Front
 @onready var _white = $White
+@onready var _label = $Label
 
 # --------------------------------------------
 # var.
@@ -66,6 +69,13 @@ func setup(pos:Vector2, idx:int, id:eId) -> void:
 	_id = id
 	
 	_front.texture = load("res://assets/images/card_%02d.png"%id)
+
+## 消滅する.
+func vanish() -> void:
+	if _state == eState.VANISH:
+		return
+	_timer = 0
+	_state = eState.VANISH
 	
 ## 裏返す.
 func flip_to_back(delay:float=0) -> void:
@@ -91,6 +101,8 @@ func _ready() -> void:
 
 ## 更新.
 func _process(delta: float) -> void:
+	_update_debug()
+	
 	_blink_timer += delta
 	
 	if _delay_timer > 0.0:
@@ -143,14 +155,25 @@ func _process(delta: float) -> void:
 				is_back = true
 				rot_rate = 1.0
 				_state = eState.BACK
+		eState.VANISH:
+			# 消滅.
+			var rate = _timer / TIME_VANISH
+			_front.scale = Vector2.ONE * (1 + rate)
+			_front.modulate.a = 1 - rate
+			# 以下の処理は行わない.
+			if _timer >= TIME_VANISH:
+				queue_free()
+			return
+	
+	# フラグに対応した処理を行う.
 	_back.visible = false
 	_front.visible = false
 	var spr:Sprite2D = _front
 	if is_back:
+		# 対象は裏のカード.
 		spr = _back
 	spr.visible = true
 	spr.scale.x = 1.0 * sin(PI/2 * rot_rate)
-		
 	
 func _update_back(delta:float) -> void:
 	if _selected:
@@ -163,6 +186,8 @@ func _update_back(delta:float) -> void:
 				_white.modulate.a = 0
 				_white.visible = false
 
+func _update_debug() -> void:
+	_label.text = eState.keys()[_state]
 # --------------------------------------------
 # signals.
 # --------------------------------------------
@@ -196,3 +221,7 @@ var selected:bool:
 var is_back:bool:
 	get:
 		return _state == eState.BACK
+## 表向きかどうか.
+var is_front:bool:
+	get:
+		return _state == eState.FRONT
