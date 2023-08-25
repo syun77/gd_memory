@@ -10,6 +10,7 @@ class_name Card
 ## ひっくり返る時間.
 const TIME_ROTATE = 0.3
 const TIME_VANISH = 0.5 # 消滅時間.
+const TIME_SHAKE = 0.5 # 揺れ時間.
 
 ## カードID.
 enum eId {
@@ -52,12 +53,16 @@ var _pos_idx = 0
 var _state = eState.BACK
 ## タイマー.
 var _timer = 0.0
+## フレームカウンタ.
+var _cnt = 0
 ## 選択しているかどうか.
 var _selected = false
 ## 点滅タイマー.
 var _blink_timer = 0.0
 ## ディレイタイマー.
 var _delay_timer = 0.0
+## 揺れ時間.
+var _shake_timer = 0.0
 
 # --------------------------------------------
 # public functions.
@@ -69,6 +74,10 @@ func setup(pos:Vector2, idx:int, id:eId) -> void:
 	_id = id
 	
 	_front.texture = load("res://assets/images/card_%02d.png"%id)
+
+## 揺れ開始.
+func shake() -> void:
+	_shake_timer = TIME_SHAKE
 
 ## 消滅する.
 func vanish() -> void:
@@ -100,7 +109,8 @@ func _ready() -> void:
 	pass
 
 ## 更新.
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	_cnt += 1
 	_update_debug()
 	
 	_blink_timer += delta
@@ -108,6 +118,9 @@ func _process(delta: float) -> void:
 	if _delay_timer > 0.0:
 		_delay_timer -= delta
 		return
+	
+	# 揺れ更新.
+	_update_shake(delta)
 	
 	var time_half = TIME_ROTATE / 2.0
 	var time_total = TIME_ROTATE
@@ -157,8 +170,9 @@ func _process(delta: float) -> void:
 				_state = eState.BACK
 		eState.VANISH:
 			# 消滅.
-			var rate = _timer / TIME_VANISH
-			_front.scale = Vector2.ONE * (1 + rate)
+			var rate = Ease.cube_out(_timer / TIME_VANISH)
+			var scale = 1 + rate
+			_front.scale = Vector2.ONE * scale
 			_front.modulate.a = 1 - rate
 			# 以下の処理は行わない.
 			if _timer >= TIME_VANISH:
@@ -186,6 +200,19 @@ func _update_back(delta:float) -> void:
 				_white.modulate.a = 0
 				_white.visible = false
 
+func _update_shake(delta:float) -> void:
+	_shake_timer = max(_shake_timer-delta, 0.0) 
+	var offset = Vector2.ZERO
+	if _shake_timer > 0.0:
+		var rate = _shake_timer / TIME_SHAKE
+		var sign = 1
+		if _cnt%4 < 2:
+			sign = -1
+		offset.x = 4 * sign * rate
+		offset.y = randf_range(-2, 2) * rate
+	_front.offset = offset
+	_back.offset = offset
+	
 func _update_debug() -> void:
 	_label.text = eState.keys()[_state]
 # --------------------------------------------

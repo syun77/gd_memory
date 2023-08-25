@@ -13,8 +13,8 @@ const GRID_H = 100
 const GRID_CNT_W = 4
 const GRID_CNT_H = 4
 
-## マッチしなかったときの待ち時間.
-const TIMER_WAIT = 1.0
+## カードをめくった後の待ち時間.
+const TIMER_WAIT = 0.5
 
 ## 状態.
 enum eState {
@@ -110,9 +110,13 @@ func _update_WAIT(delta:float) -> void:
 			return # すべてが表向きになるまで待つ.
 
 	# さらに待つ.
+	if _timer == 0:
+		if _check_erase(false) == false:
+			# 消せない.
+			pass
 	_timer += delta
 	if _timer > TIMER_WAIT:
-		if _check_erase():
+		if _check_erase(true):
 			# 消せたのでめくったカード情報を消す.
 			_front_cards.clear()
 		else:
@@ -134,7 +138,8 @@ func _update_GAMECLEAR(delta:float) -> void:
 	pass
 
 ## 消去チェック.
-func _check_erase() -> bool:
+## @param is_erase 消去も同時に行うかどうか.
+func _check_erase(is_erase:bool) -> bool:
 	var ret = false # マッチしたカードがあるかどうか.
 	var list = []
 	for i in range(Card.eId.size()):
@@ -146,10 +151,16 @@ func _check_erase() -> bool:
 		# カウントだけする.
 		list[c.id] += 1
 	
-	print(list)
-	
 	for idx in range(list.size()):
 		if list[idx] < 2:
+			# マッチしなかった
+			for card in _card_layer.get_children():
+				var c = card as Card
+				if c.is_front == false:
+					continue # 対象カードは表のものだけ.
+				if c.idx == idx:
+					# 揺らす.
+					c.shake()
 			continue
 		
 		# マッチしたカードがある.
@@ -161,7 +172,9 @@ func _check_erase() -> bool:
 			if c.is_front == false:
 				continue # 対象カードは表のものだけ.
 			if c.id == idx:
-				c.vanish()
+				if is_erase:
+					# 消去する.
+					c.vanish()
 	
 	return ret
 
