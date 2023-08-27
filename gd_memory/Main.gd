@@ -120,6 +120,9 @@ func _update_WAIT1(_delta:float) -> void:
 	# そろっていないカードを揺らす.
 	_foreach_front_cards(false, func(card:Card): card.shake())
 	
+	# そろっていたらマッチ演出する.
+	_foreach_front_cards(true, func(card:Card): card.start_match())
+	
 	print(_front_cnts)
 	
 	_state = eState.WAIT2

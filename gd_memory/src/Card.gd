@@ -11,6 +11,7 @@ class_name Card
 const TIME_ROTATE = 0.15 # ひっくり返る時間.
 const TIME_VANISH = 0.5 # 消滅時間.
 const TIME_SHAKE = 0.5 # 揺れ時間.
+const TIME_MATCH = 0.5 # マッチしたときの演出時間.
 
 ## カードID.
 enum eId {
@@ -65,6 +66,8 @@ var _blink_timer = 0.0
 var _delay_timer = 0.0
 ## 揺れ時間.
 var _shake_timer = 0.0
+## そろったときの演出タイマー.
+var _match_timer = 0.0
 
 # --------------------------------------------
 # public functions.
@@ -81,6 +84,10 @@ func setup(pos:Vector2, pos_idx:int, card_id:eId) -> void:
 ## 揺れ開始.
 func shake() -> void:
 	_shake_timer = TIME_SHAKE
+	
+## そろった演出開始.
+func start_match() -> void:
+	_match_timer = TIME_MATCH
 
 ## 消滅する.
 func vanish() -> void:
@@ -121,6 +128,11 @@ func _physics_process(delta: float) -> void:
 	
 	# 点滅タイマー更新.
 	_blink_timer += delta
+	
+	if _match_timer > 0.0:
+		# マッチしたときの演出.
+		_match_timer -= delta
+		_update_match()
 	
 	if _delay_timer > 0.0:
 		# 待ち処理.
@@ -200,6 +212,17 @@ func _physics_process(delta: float) -> void:
 	# フラグに対応した回転処理を行う.
 	_update_flip(is_back_card, rot_rate)
 	
+## 更新 > マッチしたときの演出.
+func _update_match() -> void:
+	var rate = _match_timer / TIME_MATCH
+	if rate < 0:
+		_white.visible = false
+		return
+		
+	_white.visible = true
+	_white.modulate = Color.YELLOW
+	_white.modulate.a = 0.5 * abs(sin(rate * PI/2))
+	
 ## 更新 > ひっくり返す.
 func _update_flip(is_back_card:bool, rot_rate:float) -> void:
 	# 表・裏のスプライトを非表示.
@@ -222,7 +245,7 @@ func _update_blink_select(delta:float) -> void:
 		# 選択していたら点滅する.
 		_white.visible = true
 		_white.modulate = Color.WHITE
-		_white.modulate.a = 0.2 + 0.8 * abs(sin(_blink_timer * 2))
+		_white.modulate.a = 0.2 + 0.3 * abs(sin(_blink_timer * 2))
 	else:
 		# 選択していなかったらフェードアウトする.
 		if _white.modulate.a > 0:

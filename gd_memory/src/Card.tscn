@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://cjplxctbi6wr6"]
+[gd_scene load_steps=8 format=3 uid="uid://cjplxctbi6wr6"]
 
 [ext_resource type="Texture2D" uid="uid://bx7y3wjjqeqpg" path="res://assets/images/card.png" id="1_0ceg5"]
 [ext_resource type="Script" path="res://src/Card.gd" id="1_qn6ch"]
@@ -8,10 +8,14 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_6d6pj"]
 size = Vector2(64, 80)
 
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_53ym3"]
+blend_mode = 1
+
 [sub_resource type="LabelSettings" id="LabelSettings_fq21a"]
 font = ExtResource("4_c256a")
 
 [node name="Card" type="Area2D"]
+position = Vector2(0, -1)
 script = ExtResource("1_qn6ch")
 
 [node name="Back" type="Sprite2D" parent="."]
@@ -26,6 +30,7 @@ texture = ExtResource("1_0ceg5")
 
 [node name="White" type="Sprite2D" parent="."]
 visible = false
+material = SubResource("CanvasItemMaterial_53ym3")
 texture = ExtResource("3_50rix")
 
 [node name="Label" type="Label" parent="."]
