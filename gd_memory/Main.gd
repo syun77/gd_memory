@@ -1,10 +1,13 @@
 extends Node2D
+# =============================================
+# メインシーン.
+# =============================================
 
 # ---------------------------------------------
 # const.
 # ---------------------------------------------
 ## 配置するカードの左上座標.
-const OFS_X = 128
+const OFS_X = 256
 const OFS_Y = 128
 ## 配置間隔.
 const GRID_W = 80
@@ -12,6 +15,9 @@ const GRID_H = 100
 ## 配置枚数.
 const GRID_CNT_W = 4
 const GRID_CNT_H = 4
+
+## 手数.
+const CNT_LEFT = 5
 
 ## カードをめくった後の待ち時間.
 const TIMER_WAIT = 0.5
@@ -34,6 +40,9 @@ const CARD_OBJ = preload("res://src/Card.tscn")
 # ---------------------------------------------
 # onready
 # ---------------------------------------------
+@onready var _label_left = $UILayer/LabelLeft
+@onready var _label_caption = $UILayer/LabelCaption
+## Layer
 @onready var _card_layer = $CardLayer
 @onready var _ui_layer = $UILayer
 
@@ -50,12 +59,17 @@ var _array2 = Array2.new(GRID_CNT_W, GRID_CNT_H)
 var _front_cards:Array[Card] = []
 ## めくったカードのIDに対応する枚数.
 var _front_cnts:Array[int] = []
+## 残り手数.
+var _cnt_left = CNT_LEFT
 
 # ---------------------------------------------
 # private functions.
 # ---------------------------------------------
 ## 開始.
 func _ready() -> void:
+	## キャプションを消しておく.
+	_label_caption.visible = false
+	
 	## 配置情報を作成.
 	for j in range(GRID_CNT_H):
 		for i in range(GRID_CNT_W):
@@ -83,6 +97,9 @@ func _process(delta: float) -> void:
 	# _stateに対応する更新処理を呼び出す.
 	callv("_update_" + eState.keys()[_state], [delta])
 	
+	# UIの更新.
+	_update_ui()
+	
 	# デバッグの更新.
 	_update_debug()
 
@@ -92,10 +109,15 @@ func _update_START(_delta:float) -> void:
 ## 更新 > メイン.
 func _update_MAIN(_delta:float) -> void:
 	if _front_cards.size() >= 2:
-		# カードを2枚めくった.
+		# カードを2枚めくったのでそろったかどうかの判定を行う
 		_state = eState.WAIT1
 		_timer = 0
 		return
+		
+	if _card_layer.get_child_count() == 0:
+		# 場のカードがなくなったらクリア.
+		_state = eState.GAMECLEAR
+		return	
 	
 	# めくり判定.
 	if Input.is_action_just_pressed("click"):
@@ -140,22 +162,32 @@ func _update_WAIT2(delta:float) -> void:
 		for card in _front_cards:
 			var c = card as Card
 			c.flip_to_back()
+		
+		# 手数を減らす.
+		_cnt_left -= 1
 			
 	# めくったカード情報を消す.
 	_front_cards.clear()
 	_front_cnts.fill(0)
 	
+	if _cnt_left <= 0:
+		# ゲームオーバー.
+		_state = eState.GAMEOVER
+		return
+		
 	# メインに戻る.
 	_state = eState.MAIN
 	_timer = 0
 
 # 更新 > ゲームオーバー.
 func _update_GAMEOVER(_delta:float) -> void:
-	pass
+	_label_caption.visible = true
+	_label_caption.text = "GAME OVER"
 
 # 更新 > ゲームクリア
 func _update_GAMECLEAR(_delta:float) -> void:
-	pass
+	_label_caption.visible = true
+	_label_caption.text = "GAME CLEAR"
 
 ## 表になっているカードの枚数を数える.
 func _count_front_cards() -> void:
@@ -188,7 +220,6 @@ func _foreach_front_cards(is_match:bool, f:Callable) -> void:
 	for card in _front_cards:
 		if card.id in target:
 			# 対象のカードなのでラムダ式を実行する.
-			print(card)
 			f.call(card)
 
 ## 消去チェック.
@@ -218,6 +249,10 @@ func _check_erase(is_erase:bool) -> bool:
 	
 	return ret
 
+## 更新 > UI.
+func _update_ui() -> void:
+	_label_left.text = "ライフ: %d"%_cnt_left
+
 ## 更新 > デバッグ.
 func _update_debug() -> void:
 	if Input.is_action_just_pressed("reset"):
@@ -238,3 +273,11 @@ func _grid_to_screen(i:int, j:int) -> Vector2i:
 ## グリッド座標系をインデックス座標系に変換する.
 func _grid_to_idx(i:int, j:int) -> int:
 	return i + (GRID_CNT_W * j)
+
+# ---------------------------------------------
+# single.
+# ---------------------------------------------
+## やり直し.
+func _on_button_retry_pressed() -> void:
+	# やり直し.
+	get_tree().change_scene_to_file("res://Main.tscn")

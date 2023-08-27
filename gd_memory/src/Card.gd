@@ -275,14 +275,14 @@ func _update_debug() -> void:
 
 ## print用の文字列を返す.	
 func _to_string() -> String:
-	return "[Card] id:%d idx:%d is_front:%d"%[id, idx, is_front]
+	return "[Card] %s idx:%d is_front:%s"%[eId.keys()[id], idx, is_front]
 # --------------------------------------------
 # signals.
 # --------------------------------------------
 ## マウスカーソルが入ってきた.
 func _on_mouse_entered() -> void:
 	_selected = true
-	_blink_timer = PI/2/2
+	_blink_timer = PI/2/2 # 90度=1.0
 
 ## マウスカーソルが出ていった.
 func _on_mouse_exited() -> void:

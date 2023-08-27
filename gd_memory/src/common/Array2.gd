@@ -54,6 +54,14 @@ func set_v(i:int, j:int, v:int) -> void:
 ## シャッフルする.
 func shuffle() -> void:
 	_pool.shuffle()
+	
+## 指定の値が存在する数を数える.
+func count(v:int) -> int:
+	var ret = 0
+	for v2 in _pool:
+		if v == v2:
+			ret += 1
+	return ret
 
 ## すべてを同じ値で埋める.
 func fill(v:int) -> void:
@@ -62,10 +70,9 @@ func fill(v:int) -> void:
 
 ## すべてが初期値かどうか.
 func check_all_empty() -> bool:
-	for v in range(_pool):
-		if v != DEFAULT:
-			return false
-	return true
+	dump()
+	print("check_all_empty()", count(DEFAULT), "==", width * height)
+	return count(DEFAULT) == width * height
 
 func foreach(f:Callable) -> void:
 	for j in range(height):
