@@ -68,10 +68,10 @@ var _shake_timer = 0.0
 # public functions.
 # --------------------------------------------
 ## セットアップ.
-func setup(pos:Vector2, idx:int, id:eId) -> void:
+func setup(pos:Vector2, pos_idx:int, card_id:eId) -> void:
 	position = pos
-	_pos_idx = idx
-	_id = id
+	_pos_idx = pos_idx
+	_id = card_id
 	
 	_front.texture = load("res://assets/images/card_%02d.png"%id)
 
@@ -127,52 +127,52 @@ func _physics_process(delta: float) -> void:
 	
 	_timer += delta
 	var rot_rate = 1.0
-	var is_back = true
+	var is_back_card = true
 	match _state:
 		eState.BACK:
 			# 裏向き.
-			is_back = true
+			is_back_card = true
 			rot_rate = 1.0
 			_update_back(delta)
 		eState.BACK_TO_FRONT:
 			# 裏 -> 表.
 			if _timer < time_half:
 				# 前半.
-				is_back = true
+				is_back_card = true
 				rot_rate = 1 - (_timer / time_half)
 			elif _timer < time_total:
 				# 後半.
-				is_back = false
+				is_back_card = false
 				rot_rate = (_timer - time_half) / time_half
 			else:
 				# 終了.
-				is_back = false
+				is_back_card = false
 				rot_rate = 1.0
 				_state = eState.FRONT
 		eState.FRONT:
 			# 表向き.
-			is_back = false
+			is_back_card = false
 			rot_rate = 1.0
 		eState.FRONT_TO_BACK:
 			# 表 -> 裏.
 			if _timer < time_half:
 				# 前半.
-				is_back = false
+				is_back_card = false
 				rot_rate = 1 - (_timer / time_half)
 			elif _timer < time_total:
 				# 後半.
-				is_back = true
+				is_back_card = true
 				rot_rate = (_timer - time_half) / time_half
 			else:
 				# 終了.
-				is_back = true
+				is_back_card = true
 				rot_rate = 1.0
 				_state = eState.BACK
 		eState.VANISH:
 			# 消滅.
 			var rate = Ease.cube_out(_timer / TIME_VANISH)
-			var scale = 1 + rate
-			_front.scale = Vector2.ONE * scale
+			var card_scale = 1 + rate
+			_front.scale = Vector2.ONE * card_scale
 			_front.modulate.a = 1 - rate
 			# 以下の処理は行わない.
 			if _timer >= TIME_VANISH:
@@ -183,7 +183,7 @@ func _physics_process(delta: float) -> void:
 	_back.visible = false
 	_front.visible = false
 	var spr:Sprite2D = _front
-	if is_back:
+	if is_back_card:
 		# 対象は裏のカード.
 		spr = _back
 	spr.visible = true
@@ -205,10 +205,10 @@ func _update_shake(delta:float) -> void:
 	var offset = Vector2.ZERO
 	if _shake_timer > 0.0:
 		var rate = _shake_timer / TIME_SHAKE
-		var sign = 1
+		var mul = 1
 		if _cnt%4 < 2:
-			sign = -1
-		offset.x = 4 * sign * rate
+			mul = -1
+		offset.x = 4 * mul * rate
 		offset.y = randf_range(-2, 2) * rate
 	_front.offset = offset
 	_back.offset = offset

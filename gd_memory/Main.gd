@@ -88,10 +88,10 @@ func _process(delta: float) -> void:
 	_update_debug()
 
 ## 更新 > 開始.
-func _update_START(delta:float) -> void:
+func _update_START(_delta:float) -> void:
 	_state = eState.MAIN
 ## 更新 > メイン.
-func _update_MAIN(delta:float) -> void:
+func _update_MAIN(_delta:float) -> void:
 	if _front_cards.size() >= 2:
 		# カードを2枚めくった.
 		_state = eState.WAIT1
@@ -111,7 +111,7 @@ func _update_MAIN(delta:float) -> void:
 	
 	
 # 更新 > めくった後の待ち時間.
-func _update_WAIT1(delta:float) -> void:
+func _update_WAIT1(_delta:float) -> void:
 	for card in _front_cards:
 		var c = card as Card
 		if c.is_front == false:
@@ -121,7 +121,7 @@ func _update_WAIT1(delta:float) -> void:
 	_count_front_cards()
 	
 	# そろっていないカードを揺らす.
-	_shake_unmatch_cards()
+	_foreach_front_cards(false, func(card:Card): card.shake())
 	
 	print(_front_cnts)
 	
@@ -145,11 +145,11 @@ func _update_WAIT2(delta:float) -> void:
 		_timer = 0
 
 # 更新 > ゲームオーバー.
-func _update_GAMEOVER(delta:float) -> void:
+func _update_GAMEOVER(_delta:float) -> void:
 	pass
 
 # 更新 > ゲームクリア
-func _update_GAMECLEAR(delta:float) -> void:
+func _update_GAMECLEAR(_delta:float) -> void:
 	pass
 
 ## 表になっているカードの枚数を数える.
@@ -164,22 +164,29 @@ func _count_front_cards() -> void:
 		# カウントアップ.
 		_front_cnts[c.id] += 1
 
-## そろっていないカードを揺らす.
-func _shake_unmatch_cards() -> void:
+## 表のカードに対する処理を行う.
+func _foreach_front_cards(is_match:bool, f:Callable) -> void:
+	var match_list = []
 	var unmatch_list = []
 	
 	for idx in range(_front_cnts.size()):
-		if _front_cnts[idx] == 1:
-			# 1枚だけ表向きならそろっていないとみなす.
-			unmatch_list.append(idx)
+		match _front_cnts[idx]:
+			1:
+				# 1枚だけ表向きならそろっていないとみなす.
+				unmatch_list.append(idx)
+			2:
+				# 2枚表向きならそろっているとみなす.
+				match_list.append(idx)
 	
-	print(unmatch_list)
-	print(_front_cards)
-
+	var target = match_list # そろっているカード.
+	if is_match == false:
+		target = unmatch_list # そろっていないカードが対象.
+	
 	for card in _front_cards:
-		if card.idx in unmatch_list:
-			# そろっていないカードなので揺らす.
-			card.shake()
+		if card.id in target:
+			# 対象のカード.
+			print(card)
+			f.call(card)
 
 ## 消去チェック.
 ## @param is_erase 消去も同時に行うかどうか.

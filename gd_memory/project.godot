@@ -19,6 +19,10 @@ config/icon="res://icon.svg"
 
 Ease="*res://src/common/Ease.gd"
 
+[display]
+
+window/dpi/allow_hidpi=false
+
 [input]
 
 reset={
