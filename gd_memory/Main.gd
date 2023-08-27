@@ -17,7 +17,7 @@ const GRID_CNT_W = 4
 const GRID_CNT_H = 4
 
 ## 手数.
-const CNT_LEFT = 5
+const CNT_LEFT = 7
 
 ## カードをめくった後の待ち時間.
 const TIMER_WAIT = 0.5
@@ -42,6 +42,8 @@ const CARD_OBJ = preload("res://src/Card.tscn")
 # ---------------------------------------------
 @onready var _label_left = $UILayer/LabelLeft
 @onready var _label_caption = $UILayer/LabelCaption
+@onready var _label_kind = $UILayer/LabelKind
+@onready var _slider_kind = $UILayer/HSliderKind
 ## Layer
 @onready var _card_layer = $CardLayer
 @onready var _ui_layer = $UILayer
@@ -70,10 +72,12 @@ func _ready() -> void:
 	## キャプションを消しておく.
 	_label_caption.visible = false
 	
-	## 配置情報を作成.
-	for j in range(GRID_CNT_H):
-		for i in range(GRID_CNT_W):
-			_array2.set_v(i, j, j+1)
+	## スライダーの値を設定.
+	_slider_kind.value = Common.cnt_card_kind
+	
+	## カード配置情報を作成.
+	_create_card_array()
+			
 	## 配情報をシャッフルする.
 	_array2.shuffle()
 	## デバッグ出力.
@@ -91,6 +95,25 @@ func _ready() -> void:
 	# 表のカード枚数計算用.
 	_front_cnts.resize(Card.eId.size())
 	_front_cnts.fill(0)
+	
+## カード配置情報を作成.
+func _create_card_array() -> void:
+	var id = Card.eId.NASU
+	var idx = 0
+	
+	# この数で難易度が決まる.
+	var id_max = 1 + (Common.cnt_card_kind) # 出現するカードの数.
+	
+	for j in range(GRID_CNT_H):
+		for i in range(GRID_CNT_W):
+			_array2.set_v(i, j, id)
+			idx += 1
+			if idx%2 == 0:
+				# 2枚ずつ作る.
+				id = (id+1)%id_max
+				if id == Card.eId.NONE:
+					# 無効なカードになっていたら+1
+					id += 1
 
 ## 更新.
 func _process(delta: float) -> void:
@@ -252,6 +275,7 @@ func _check_erase(is_erase:bool) -> bool:
 ## 更新 > UI.
 func _update_ui() -> void:
 	_label_left.text = "ライフ: %d"%_cnt_left
+	_label_kind.text = "出現するカードの種類: %d"%Common.cnt_card_kind
 
 ## 更新 > デバッグ.
 func _update_debug() -> void:
@@ -281,3 +305,7 @@ func _grid_to_idx(i:int, j:int) -> int:
 func _on_button_retry_pressed() -> void:
 	# やり直し.
 	get_tree().change_scene_to_file("res://Main.tscn")
+
+## カードの種類数.
+func _on_h_slider_kind_value_changed(value: float) -> void:
+	Common.cnt_card_kind = int(value)

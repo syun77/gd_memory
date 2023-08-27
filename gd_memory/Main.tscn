@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://cx66wnksi2hg4"]
+[gd_scene load_steps=7 format=3 uid="uid://cx66wnksi2hg4"]
 
 [ext_resource type="Script" path="res://Main.gd" id="1_8m4mt"]
 [ext_resource type="FontFile" uid="uid://4kleinsell7b" path="res://assets/fonts/Xolonium-Regular.ttf" id="2_5h4mn"]
@@ -17,6 +17,12 @@ default_font_size = 24
 font = ExtResource("2_5h4mn")
 font_size = 48
 outline_size = 8
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_hsr5d"]
+font = ExtResource("2_5h4mn")
+font_size = 24
+outline_size = 3
 outline_color = Color(0, 0, 0, 1)
 
 [node name="Main" type="Node2D"]
@@ -51,4 +57,22 @@ offset_bottom = 302.0
 text = "GAME OVER"
 label_settings = SubResource("LabelSettings_lwkq8")
 
+[node name="HSliderKind" type="HSlider" parent="UILayer"]
+offset_left = 32.0
+offset_top = 600.0
+offset_right = 232.0
+offset_bottom = 616.0
+min_value = 2.0
+max_value = 7.0
+value = 4.0
+
+[node name="LabelKind" type="Label" parent="UILayer"]
+offset_left = 32.0
+offset_top = 544.0
+offset_right = 313.0
+offset_bottom = 577.0
+text = "出現するカードの種類：4"
+label_settings = SubResource("LabelSettings_hsr5d")
+
 [connection signal="pressed" from="UILayer/ButtonRetry" to="." method="_on_button_retry_pressed"]
+[connection signal="value_changed" from="UILayer/HSliderKind" to="." method="_on_h_slider_kind_value_changed"]
