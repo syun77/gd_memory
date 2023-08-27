@@ -20,7 +20,8 @@ const TIMER_WAIT = 0.5
 enum eState {
 	START, # 開始.
 	MAIN, # メイン.
-	WAIT, # めくった後の待ち時間.
+	WAIT1, # めくった後の待ち時間.
+	WAIT2,
 	GAMEOVER, # ゲームオーバー.
 	GAMECLEAR, # ゲームクリア.
 }
@@ -47,6 +48,8 @@ var _timer = 0.0
 var _array2 = Array2.new(GRID_CNT_W, GRID_CNT_H)
 ## めくったカードのリスト.
 var _front_cards:Array[Card] = []
+## めくったカードのIDに対応する枚数.
+var _front_cnts:Array[int] = []
 
 # ---------------------------------------------
 # private functions.
@@ -71,6 +74,10 @@ func _ready() -> void:
 		card.setup(pos, idx, v)
 		#card.flip_to_front(idx * 0.1)
 	)
+	
+	# 表のカード枚数計算用.
+	_front_cnts.resize(Card.eId.size())
+	_front_cnts.fill(0)
 
 ## 更新.
 func _process(delta: float) -> void:
@@ -86,7 +93,8 @@ func _update_START(delta:float) -> void:
 ## 更新 > メイン.
 func _update_MAIN(delta:float) -> void:
 	if _front_cards.size() >= 2:
-		_state = eState.WAIT
+		# カードを2枚めくった.
+		_state = eState.WAIT1
 		_timer = 0
 		return
 	
@@ -103,29 +111,36 @@ func _update_MAIN(delta:float) -> void:
 	
 	
 # 更新 > めくった後の待ち時間.
-func _update_WAIT(delta:float) -> void:
+func _update_WAIT1(delta:float) -> void:
 	for card in _front_cards:
 		var c = card as Card
 		if c.is_front == false:
 			return # すべてが表向きになるまで待つ.
 
-	# さらに待つ.
-	if _timer == 0:
-		if _check_erase(false) == false:
-			# 消せない.
-			pass
+	# 表になっているカードの枚数を数える.
+	_count_front_cards()
+	
+	# そろっていないカードを揺らす.
+	_shake_unmatch_cards()
+	
+	print(_front_cnts)
+	
+	_state = eState.WAIT2
+
+func _update_WAIT2(delta:float) -> void:
 	_timer += delta
+	# 少し待つ.
 	if _timer > TIMER_WAIT:
-		if _check_erase(true):
-			# 消せたのでめくったカード情報を消す.
-			_front_cards.clear()
-		else:
-			# カードをもとに戻す.
+		if _check_erase(true) == false:
+			# 消せなかったのでカードをもとに戻す.
 			for card in _front_cards:
 				var c = card as Card
 				c.flip_to_back()
-			# めくったカード情報を消す.
-			_front_cards.clear()
+				
+		# めくったカード情報を消す.
+		_front_cards.clear()
+		_front_cnts.fill(0)
+		
 		_state = eState.MAIN
 		_timer = 0
 
@@ -137,44 +152,59 @@ func _update_GAMEOVER(delta:float) -> void:
 func _update_GAMECLEAR(delta:float) -> void:
 	pass
 
-## 消去チェック.
-## @param is_erase 消去も同時に行うかどうか.
-func _check_erase(is_erase:bool) -> bool:
-	var ret = false # マッチしたカードがあるかどうか.
-	var list = []
-	for i in range(Card.eId.size()):
-		list.append(0)
+## 表になっているカードの枚数を数える.
+func _count_front_cards() -> void:
+	# 0クリア.
+	_front_cnts.fill(0)
+	
 	for card in _card_layer.get_children():
 		var c = card as Card
 		if c.is_front == false:
 			continue # 対象カードは表のものだけ.
-		# カウントだけする.
-		list[c.id] += 1
+		# カウントアップ.
+		_front_cnts[c.id] += 1
+
+## そろっていないカードを揺らす.
+func _shake_unmatch_cards() -> void:
+	var unmatch_list = []
 	
-	for idx in range(list.size()):
-		if list[idx] < 2:
-			# マッチしなかった
-			for card in _card_layer.get_children():
-				var c = card as Card
-				if c.is_front == false:
-					continue # 対象カードは表のものだけ.
-				if c.idx == idx:
-					# 揺らす.
-					c.shake()
-			continue
+	for idx in range(_front_cnts.size()):
+		if _front_cnts[idx] == 1:
+			# 1枚だけ表向きならそろっていないとみなす.
+			unmatch_list.append(idx)
+	
+	print(unmatch_list)
+	print(_front_cards)
+
+	for card in _front_cards:
+		if card.idx in unmatch_list:
+			# そろっていないカードなので揺らす.
+			card.shake()
+
+## 消去チェック.
+## @param is_erase 消去も同時に行うかどうか.
+func _check_erase(is_erase:bool) -> bool:
+	var ret = false # マッチしたカードがあるかどうか.
+	
+	var match_list = []
+	for idx in range(_front_cnts.size()):
+		if _front_cnts[idx] == 2:
+			# 2枚表向きならそろっているとみなす.
+			match_list.append(idx)
+	
+	for idx in range(_front_cnts.size()):
+		if not idx in match_list:
+			continue # マッチリストにいない.
 		
 		# マッチしたカードがある.
 		ret = true
 		
 		# マッチしたカードを消す.
-		for card in _card_layer.get_children():
-			var c = card as Card
-			if c.is_front == false:
-				continue # 対象カードは表のものだけ.
-			if c.id == idx:
+		for card in _front_cards:
+			if card.id == idx:
 				if is_erase:
 					# 消去する.
-					c.vanish()
+					card.vanish()
 	
 	return ret
 

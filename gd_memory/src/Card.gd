@@ -215,6 +215,9 @@ func _update_shake(delta:float) -> void:
 	
 func _update_debug() -> void:
 	_label.text = eState.keys()[_state]
+	
+func _to_string() -> String:
+	return "[Card] id:%d idx:%d is_front:%d"%[id, idx, is_front]
 # --------------------------------------------
 # signals.
 # --------------------------------------------
