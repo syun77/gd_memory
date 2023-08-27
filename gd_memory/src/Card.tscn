@@ -1,9 +1,9 @@
 [gd_scene load_steps=7 format=3 uid="uid://cjplxctbi6wr6"]
 
-[ext_resource type="Texture2D" uid="uid://daemv0fjq14lx" path="res://assets/images/card.png" id="1_0ceg5"]
+[ext_resource type="Texture2D" uid="uid://bx7y3wjjqeqpg" path="res://assets/images/card.png" id="1_0ceg5"]
 [ext_resource type="Script" path="res://src/Card.gd" id="1_qn6ch"]
-[ext_resource type="Texture2D" uid="uid://b6mm0rjety0yp" path="res://assets/images/card_white.png" id="3_50rix"]
-[ext_resource type="FontFile" uid="uid://tet0yskc4fgh" path="res://assets/fonts/Xolonium-Regular.ttf" id="4_c256a"]
+[ext_resource type="Texture2D" uid="uid://dtqeq8hp3t3lq" path="res://assets/images/card_white.png" id="3_50rix"]
+[ext_resource type="FontFile" uid="uid://4kleinsell7b" path="res://assets/fonts/Xolonium-Regular.ttf" id="4_c256a"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_6d6pj"]
 size = Vector2(64, 80)
@@ -29,6 +29,7 @@ visible = false
 texture = ExtResource("3_50rix")
 
 [node name="Label" type="Label" parent="."]
+visible = false
 offset_right = 40.0
 offset_bottom = 23.0
 label_settings = SubResource("LabelSettings_fq21a")

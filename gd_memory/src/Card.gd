@@ -7,8 +7,8 @@ class_name Card
 # --------------------------------------------
 # const.
 # --------------------------------------------
-## ひっくり返る時間.
-const TIME_ROTATE = 0.3
+## 時間関連.
+const TIME_ROTATE = 0.15 # ひっくり返る時間.
 const TIME_VANISH = 0.5 # 消滅時間.
 const TIME_SHAKE = 0.5 # 揺れ時間.
 
@@ -28,9 +28,11 @@ enum eId {
 ## 状態.
 enum eState {
 	BACK, # 裏向き.
-	BACK_TO_FRONT, # 裏から表.
+	BACK_TO_FRONT1, # 裏から表.
+	BACK_TO_FRONT2,
 	FRONT, # 表向き.
-	FRONT_TO_BACK, # 表から裏.
+	FRONT_TO_BACK1, # 表から裏.
+	FRONT_TO_BACK2,
 	VANISH, # 消滅.
 }
 
@@ -73,6 +75,7 @@ func setup(pos:Vector2, pos_idx:int, card_id:eId) -> void:
 	_pos_idx = pos_idx
 	_id = card_id
 	
+	# 表のカード画像を読み込む.
 	_front.texture = load("res://assets/images/card_%02d.png"%id)
 
 ## 揺れ開始.
@@ -90,14 +93,14 @@ func vanish() -> void:
 func flip_to_back(delay:float=0) -> void:
 	if _state != eState.BACK:
 		_timer = 0
-		_state = eState.FRONT_TO_BACK
+		_state = eState.FRONT_TO_BACK1
 		_delay_timer = delay
 
 ## 表にする.
 func flip_to_front(delay:float=0) -> void:
 	if _state != eState.FRONT:
 		_timer = 0
-		_state = eState.BACK_TO_FRONT
+		_state = eState.BACK_TO_FRONT1
 		_delay_timer = delay
 		_white.visible = false # 点滅を非表示.
 
@@ -116,14 +119,12 @@ func _physics_process(delta: float) -> void:
 	_blink_timer += delta
 	
 	if _delay_timer > 0.0:
+		# 待ち処理.
 		_delay_timer -= delta
 		return
 	
 	# 揺れ更新.
 	_update_shake(delta)
-	
-	var time_half = TIME_ROTATE / 2.0
-	var time_total = TIME_ROTATE
 	
 	_timer += delta
 	var rot_rate = 1.0
@@ -134,40 +135,50 @@ func _physics_process(delta: float) -> void:
 			is_back_card = true
 			rot_rate = 1.0
 			_update_back(delta)
-		eState.BACK_TO_FRONT:
-			# 裏 -> 表.
-			if _timer < time_half:
-				# 前半.
-				is_back_card = true
-				rot_rate = 1 - (_timer / time_half)
-			elif _timer < time_total:
-				# 後半.
-				is_back_card = false
-				rot_rate = (_timer - time_half) / time_half
-			else:
+			
+		eState.BACK_TO_FRONT1:
+			# 裏 -> 表 (前半).
+			is_back_card = true
+			rot_rate = 1 - (_timer / TIME_ROTATE)
+			if _timer >= TIME_ROTATE:
+				# 後半へ続く.
+				rot_rate = 0
+				_timer = 0.0
+				_state = eState.BACK_TO_FRONT2
+		eState.BACK_TO_FRONT2:
+			# 裏 -> 表 (後半).
+			is_back_card = false
+			rot_rate = _timer / TIME_ROTATE
+			if _timer >= TIME_ROTATE:
 				# 終了.
 				is_back_card = false
 				rot_rate = 1.0
 				_state = eState.FRONT
+			
 		eState.FRONT:
 			# 表向き.
 			is_back_card = false
 			rot_rate = 1.0
-		eState.FRONT_TO_BACK:
-			# 表 -> 裏.
-			if _timer < time_half:
-				# 前半.
-				is_back_card = false
-				rot_rate = 1 - (_timer / time_half)
-			elif _timer < time_total:
-				# 後半.
-				is_back_card = true
-				rot_rate = (_timer - time_half) / time_half
-			else:
+			
+		eState.FRONT_TO_BACK1:
+			# 表 -> 裏(前半).
+			is_back_card = false
+			rot_rate = 1 - (_timer / TIME_ROTATE)
+			if _timer >= TIME_ROTATE:
+				# 後半へ続く.
+				rot_rate = 0
+				_timer = 0.0
+				_state = eState.FRONT_TO_BACK2
+		eState.FRONT_TO_BACK2:
+			# 表 -> 裏(後半).
+			is_back_card = true
+			rot_rate = _timer / TIME_ROTATE
+			if _timer >= TIME_ROTATE:
 				# 終了.
 				is_back_card = true
 				rot_rate = 1.0
 				_state = eState.BACK
+				
 		eState.VANISH:
 			# 消滅.
 			var rate = Ease.cube_out(_timer / TIME_VANISH)
@@ -189,21 +200,27 @@ func _physics_process(delta: float) -> void:
 	spr.visible = true
 	spr.scale.x = 1.0 * sin(PI/2 * rot_rate)
 	
+## 更新 > 裏向きの場合.
 func _update_back(delta:float) -> void:
 	if _selected:
+		# 選択していたら点滅する.
 		_white.visible = true
+		_white.modulate = Color.WHITE
 		_white.modulate.a = 0.2 + 0.8 * abs(sin(_blink_timer * 2))
 	else:
+		# 選択していなかったらフェードアウトする.
 		if _white.modulate.a > 0:
 			_white.modulate.a -= delta * 2
 			if _white.modulate.a <= 0:
 				_white.modulate.a = 0
 				_white.visible = false
 
+## 更新 > 揺れ.
 func _update_shake(delta:float) -> void:
 	_shake_timer = max(_shake_timer-delta, 0.0) 
 	var offset = Vector2.ZERO
 	if _shake_timer > 0.0:
+		# 揺れが有効.
 		var rate = _shake_timer / TIME_SHAKE
 		var mul = 1
 		if _cnt%4 < 2:
@@ -213,9 +230,11 @@ func _update_shake(delta:float) -> void:
 	_front.offset = offset
 	_back.offset = offset
 	
+## 更新 > デバッグ用.
 func _update_debug() -> void:
 	_label.text = eState.keys()[_state]
-	
+
+## print用の文字列を返す.	
 func _to_string() -> String:
 	return "[Card] id:%d idx:%d is_front:%d"%[id, idx, is_front]
 # --------------------------------------------

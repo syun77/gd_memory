@@ -67,12 +67,11 @@ func _ready() -> void:
 	
 	## カードを生成.
 	_array2.foreach(func(i, j, v):
-		var pos = _grid_to_screen(i, j)
-		var idx = _grid_to_idx(i, j)
-		var card = CARD_OBJ.instantiate()
-		_card_layer.add_child(card)
-		card.setup(pos, idx, v)
-		#card.flip_to_front(idx * 0.1)
+		var pos = _grid_to_screen(i, j) # スクリーン座標.
+		var idx = _grid_to_idx(i, j) # インデックス座標.
+		var card = CARD_OBJ.instantiate() # カードインスタンス.
+		_card_layer.add_child(card) # カードレイヤーに登録する.
+		card.setup(pos, idx, v) # カードをセットアップ.
 	)
 	
 	# 表のカード枚数計算用.
@@ -108,8 +107,6 @@ func _update_MAIN(_delta:float) -> void:
 				_front_cards.append(c)
 				break
 	
-	
-	
 # 更新 > めくった後の待ち時間.
 func _update_WAIT1(_delta:float) -> void:
 	for card in _front_cards:
@@ -127,22 +124,27 @@ func _update_WAIT1(_delta:float) -> void:
 	
 	_state = eState.WAIT2
 
+## 更新 > 待ち2.
 func _update_WAIT2(delta:float) -> void:
 	_timer += delta
 	# 少し待つ.
-	if _timer > TIMER_WAIT:
-		if _check_erase(true) == false:
-			# 消せなかったのでカードをもとに戻す.
-			for card in _front_cards:
-				var c = card as Card
-				c.flip_to_back()
-				
-		# めくったカード情報を消す.
-		_front_cards.clear()
-		_front_cnts.fill(0)
-		
-		_state = eState.MAIN
-		_timer = 0
+	if _timer < TIMER_WAIT:
+		return
+	
+	# めくったカードの処理.
+	if _check_erase(true) == false:
+		# 消せなかったのでカードをもとに戻す.
+		for card in _front_cards:
+			var c = card as Card
+			c.flip_to_back()
+			
+	# めくったカード情報を消す.
+	_front_cards.clear()
+	_front_cnts.fill(0)
+	
+	# メインに戻る.
+	_state = eState.MAIN
+	_timer = 0
 
 # 更新 > ゲームオーバー.
 func _update_GAMEOVER(_delta:float) -> void:
@@ -166,16 +168,14 @@ func _count_front_cards() -> void:
 
 ## 表のカードに対する処理を行う.
 func _foreach_front_cards(is_match:bool, f:Callable) -> void:
-	var match_list = []
-	var unmatch_list = []
+	var match_list = [] # そろっているカード.
+	var unmatch_list = [] # そろっていないカード.
 	
 	for idx in range(_front_cnts.size()):
 		match _front_cnts[idx]:
-			1:
-				# 1枚だけ表向きならそろっていないとみなす.
+			1: # 1枚だけ表向きならそろっていないとみなす.
 				unmatch_list.append(idx)
-			2:
-				# 2枚表向きならそろっているとみなす.
+			2: # 2枚表向きならそろっているとみなす.
 				match_list.append(idx)
 	
 	var target = match_list # そろっているカード.
@@ -184,7 +184,7 @@ func _foreach_front_cards(is_match:bool, f:Callable) -> void:
 	
 	for card in _front_cards:
 		if card.id in target:
-			# 対象のカード.
+			# 対象のカードなのでラムダ式を実行する.
 			print(card)
 			f.call(card)
 
@@ -215,14 +215,23 @@ func _check_erase(is_erase:bool) -> bool:
 	
 	return ret
 
+## 更新 > デバッグ.
 func _update_debug() -> void:
 	if Input.is_action_just_pressed("reset"):
+		# やり直し.
 		get_tree().change_scene_to_file("res://Main.tscn")
+	
+	if Input.is_action_just_pressed("abort"):
+		# 終了.
+		get_tree().quit()
 
+## グリッド座標系をスクリーン座標系に変換する.
 func _grid_to_screen(i:int, j:int) -> Vector2i:
 	var v = Vector2i()
 	v.x = OFS_X + (GRID_W * i)
 	v.y = OFS_Y + (GRID_H * j)
 	return v
+	
+## グリッド座標系をインデックス座標系に変換する.
 func _grid_to_idx(i:int, j:int) -> int:
 	return i + (GRID_CNT_W * j)
