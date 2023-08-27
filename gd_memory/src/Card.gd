@@ -113,9 +113,13 @@ func _ready() -> void:
 
 ## 更新.
 func _physics_process(delta: float) -> void:
+	# フレームカウンタ更新.
 	_cnt += 1
+	
+	# デバッグの更新.
 	_update_debug()
 	
+	# 点滅タイマー更新.
 	_blink_timer += delta
 	
 	if _delay_timer > 0.0:
@@ -127,14 +131,16 @@ func _physics_process(delta: float) -> void:
 	_update_shake(delta)
 	
 	_timer += delta
-	var rot_rate = 1.0
-	var is_back_card = true
+	var rot_rate = 1.0 # 回転の割合.
+	var is_back_card = true # 裏向きかどうか.
+	
 	match _state:
 		eState.BACK:
 			# 裏向き.
 			is_back_card = true
 			rot_rate = 1.0
-			_update_back(delta)
+			# 選択カーソル更新.
+			_update_blink_select(delta)
 			
 		eState.BACK_TO_FRONT1:
 			# 裏 -> 表 (前半).
@@ -180,28 +186,38 @@ func _physics_process(delta: float) -> void:
 				_state = eState.BACK
 				
 		eState.VANISH:
-			# 消滅.
+			# 消滅演出.
 			var rate = Ease.cube_out(_timer / TIME_VANISH)
 			var card_scale = 1 + rate
 			_front.scale = Vector2.ONE * card_scale
 			_front.modulate.a = 1 - rate
-			# 以下の処理は行わない.
 			if _timer >= TIME_VANISH:
+				# 消える.
 				queue_free()
+			# 消滅はカードの更新を行わないのでここでreturnする.
 			return
 	
-	# フラグに対応した処理を行う.
+	# フラグに対応した回転処理を行う.
+	_update_flip(is_back_card, rot_rate)
+	
+## 更新 > ひっくり返す.
+func _update_flip(is_back_card:bool, rot_rate:float) -> void:
+	# 表・裏のスプライトを非表示.
 	_back.visible = false
 	_front.visible = false
+	
+	# 回転するスプライト.
 	var spr:Sprite2D = _front
 	if is_back_card:
 		# 対象は裏のカード.
 		spr = _back
+	# 表示するスプライトだけ表示する.
 	spr.visible = true
-	spr.scale.x = 1.0 * sin(PI/2 * rot_rate)
+	# sinカーブで回転.
+	spr.scale.x = 1.0 * sin(PI/2 * rot_rate)	
 	
-## 更新 > 裏向きの場合.
-func _update_back(delta:float) -> void:
+## 更新 > 選択カーソル.
+func _update_blink_select(delta:float) -> void:
 	if _selected:
 		# 選択していたら点滅する.
 		_white.visible = true
